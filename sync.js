@@ -26,7 +26,9 @@ export default async function main() {
     console.log("Uploading courses to database...")
     for (const course of courses) {
         console.log(`\tUploading files for course: .${ course.replace(baseDir, "") }`)
-        const files = await asyncGlob(`${ course }/**/*`)
+        const files = await asyncGlob(`${ course }/**/*`, {
+            dot: true, // Include ".ixmeta.js" files
+        })
         for (const file of files) {
             console.log(`\t\tUploading file: .${ file.replace(baseDir, "") }`)
             const fileData = await readFile(file)
@@ -49,9 +51,9 @@ export default async function main() {
 
 }
 
-export async function asyncGlob(pattern) {
+export async function asyncGlob(pattern, options = {}) {
     return new Promise((resolve, reject) => {
-        glob(pattern, (err, files) => {
+        glob(pattern, options, (err, files) => {
             if (err) {
                 reject(err)
             } else {
