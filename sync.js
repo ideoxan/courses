@@ -26,7 +26,7 @@ export default async function main() {
     console.log("Uploading courses to database...")
     for (const course of courses) {
         console.log(`\tUploading files for course: .${ course.replace(baseDir, "") }`)
-        const files = await asyncGlob(`${ course }/**/*`, {
+        const files = await asyncGlob(`${ course }/**/!(.git)`, {
             dot: true, // Include ".ixmeta.js" files
         })
         for (const file of files) {
