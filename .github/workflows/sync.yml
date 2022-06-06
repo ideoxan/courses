@@ -25,6 +25,9 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
     - run: npm ci
+    - run: |
+        git submodule init
+        git submodule update
     - run: node sync.js
       env:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
