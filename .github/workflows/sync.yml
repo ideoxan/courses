@@ -26,3 +26,6 @@ jobs:
         cache: 'npm'
     - run: npm ci
     - run: node sync.js
+      env:
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
