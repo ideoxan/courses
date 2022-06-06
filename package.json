@@ -1,0 +1,26 @@
+{
+  "name": "courses",
+  "version": "1.0.0",
+  "description": "Course syncing for ideoxan",
+  "main": "sync.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ideoxan/courses.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ideoxan/courses/issues"
+  },
+  "homepage": "https://github.com/ideoxan/courses#readme",
+  "dependencies": {
+    "@supabase/supabase-js": "^1.35.3",
+    "dotenv": "^16.0.1",
+    "glob": "^8.0.3",
+    "mime-types": "^2.1.35"
+  }
+}
