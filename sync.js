@@ -41,7 +41,6 @@ export default async function main() {
             const fileData = await readFile(file)
             const { data, error } = await supabase.storage.from("course-content")
                 .upload(file.replace(baseDir, ""), fileData, {
-                    cacheControl: "3600",
                     upsert: true,
                     contentType: lookup(file.split('.').pop()),
                 })
