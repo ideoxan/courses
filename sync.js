@@ -94,13 +94,17 @@ export default async function main() {
                     }
                     // Lets upload the file to the database.
                     console.log(`\tUploading file: .${ file.replace(baseDir, "") }`)
-                    const fileData = await readFile(file)
+                    const fileData = await readFile(file, {
+                        encoding: "utf-8",
+                    })
                     workspaceMap[file.replace(baseDir, "")] = fileData
                     console.log("\t\tSuccessfully uploaded file: " + file.replace(baseDir, ""))
                 }
 
                 // Lets get the lesson guide file.
-                const lessonGuide = await readFile(`${ lesson }/resources/guide.md`)
+                const lessonGuide = await readFile(`${ lesson }/resources/guide.md`, {
+                    encoding: "utf-8",
+                })
 
                 // Append the workspace map and guide to the lesson data.
                 lessonData.content = {
