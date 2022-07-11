@@ -112,7 +112,7 @@ export default async function main() {
                 const { error: lessonMetadataError } = await supabase
                     .storage
                     .from("course-content")
-                    .upload(`${ lesson.replace(baseDir, "") }/lesson.json`, lessonData, {
+                    .upload(`${ lesson.replace(baseDir, "") }/lesson.json`, JSON.stringify(lessonData), {
                         upsert: true,
                         contentType: "application/json",
                     })
