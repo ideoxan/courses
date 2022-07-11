@@ -38,7 +38,7 @@ export default async function main() {
         const { error: courseMetadataError } = await supabase
             .storage
             .from("course-content")
-            .upload(`${ course }/course.json`, courseData, {
+            .upload(`${ course.replace(baseDir, "") }/course.json`, courseData, {
                 upsert: true,
                 contentType: "application/json",
             })
@@ -61,7 +61,7 @@ export default async function main() {
             const { error: chapterMetadataError } = await supabase
                 .storage
                 .from("course-content")
-                .upload(`${ chapter }/chapter.json`, chapterData, {
+                .upload(`${ chapter.replace(baseDir, "") }/chapter.json`, chapterData, {
                     upsert: true,
                     contentType: "application/json",
                 })
@@ -82,7 +82,7 @@ export default async function main() {
                 const { error: lessonMetadataError } = await supabase
                     .storage
                     .from("course-content")
-                    .upload(`${ lesson }/lesson.json`, lessonData, {
+                    .upload(`${ lesson.replace(baseDir, "") }/lesson.json`, lessonData, {
                         upsert: true,
                         contentType: "application/json",
                     })
@@ -128,7 +128,7 @@ export default async function main() {
                 const { error: lessonWorkspaceMapError } = await supabase
                     .storage
                     .from("course-content")
-                    .upload(`${ lesson }/workspace_map.json`, JSON.stringify(workspaceMap), {
+                    .upload(`${ lesson.replace(baseDir, "") }/workspace_map.json`, JSON.stringify(workspaceMap), {
                         upsert: true,
                         contentType: "application/json",
                     })
