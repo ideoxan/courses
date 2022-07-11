@@ -101,6 +101,10 @@ export default async function main() {
                 // We also want to collect the files in an array so we can upload the "map"
                 const workspaceMap = []
                 for (const file of files) {
+                    if ((await stat(file)).isDirectory()) {
+                        // This is a directory, so we can skip it.
+                        continue
+                    }
                     // Lets upload the file to the database.
                     console.log(`\tUploading file: .${ file.replace(baseDir, "") }`)
                     const fileData = await readFile(file)
@@ -142,6 +146,10 @@ export default async function main() {
                     dot: true,
                 })
                 for (const resource of resources) {
+                    if ((await stat(resource)).isDirectory()) {
+                        // This is a directory, so we can skip it.
+                        continue
+                    }
                     console.log(`\tUploading resource: .${ resource.replace(baseDir, "") }`)
                     const resourceData = await readFile(resource)
                     const { error: lessonResourcesError } = await supabase
