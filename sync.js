@@ -78,20 +78,7 @@ export default async function main() {
             for (const lesson of lessons) {
                 // Lets upload the lesson information to the database.
                 console.log(`\tUploading lesson metadata: .${ lesson.replace(baseDir, "") }`)
-                const lessonData = await readFile(`${ lesson }/lesson.json`)
-                const { error: lessonMetadataError } = await supabase
-                    .storage
-                    .from("course-content")
-                    .upload(`${ lesson.replace(baseDir, "") }/lesson.json`, lessonData, {
-                        upsert: true,
-                        contentType: "application/json",
-                    })
-                if (lessonMetadataError) {
-                    console.log("\t\tFailed to upload lesson metadata: " + lesson.replace(baseDir, ""))
-                    console.log(lessonMetadataError)
-                } else {
-                    console.log("\t\tSuccessfully uploaded lesson metadata: " + lesson.replace(baseDir, ""))
-                }
+                const lessonData = JSON.parse(await readFile(`${ lesson }/lesson.json`))
 
                 // Lets get a list of all of the files in the lesson workspace directory.
                 const files = await asyncGlob(`${ lesson }/workspace/**/!(.git)`, {
@@ -111,50 +98,31 @@ export default async function main() {
                     workspaceMap[file.replace(baseDir, "")] = fileData
                     console.log("\t\tSuccessfully uploaded file: " + file.replace(baseDir, ""))
                 }
-                // Now we want to upload the workspace map to the database.
-                console.log(`\tUploading workspace map: .${ lesson.replace(baseDir, "") }`)
-                const { error: lessonWorkspaceMapError } = await supabase
+
+                // Lets get the lesson guide file.
+                const lessonGuide = await readFile(`${ lesson }/resources/guide.md`)
+
+                // Append the workspace map and guide to the lesson data.
+                lessonData.content = {
+                    workspace: workspaceMap,
+                    guide: lessonGuide,
+                }
+
+                // Lets upload the lesson metadata to the database.
+                const { error: lessonMetadataError } = await supabase
                     .storage
                     .from("course-content")
-                    .upload(`${ lesson.replace(baseDir, "") }/workspace_map.json`, JSON.stringify(workspaceMap), {
+                    .upload(`${ lesson.replace(baseDir, "") }/lesson.json`, lessonData, {
                         upsert: true,
                         contentType: "application/json",
                     })
-                if (lessonWorkspaceMapError) {
-                    console.log("\t\tFailed to upload workspace map: " + lesson.replace(baseDir, ""))
-                    console.log(lessonWorkspaceMapError)
+                if (lessonMetadataError) {
+                    console.log("\t\tFailed to upload lesson metadata: " + lesson.replace(baseDir, ""))
+                    console.log(lessonMetadataError)
                 } else {
-                    console.log("\t\tSuccessfully uploaded workspace map: " + lesson.replace(baseDir, ""))
+                    console.log("\t\tSuccessfully uploaded lesson metadata: " + lesson.replace(baseDir, ""))
                 }
-
-                // Lets also upload the lesson guide to the database along with the whole resources
-                // folder
-                console.log(`\tUploading lesson resources: .${ lesson.replace(baseDir, "") }`)
-                const resources = await asyncGlob(`${ lesson }/resources/**/!(.git)`, {
-                    dot: true,
-                })
-                for (const resource of resources) {
-                    if ((await stat(resource)).isDirectory()) {
-                        // This is a directory, so we can skip it.
-                        continue
-                    }
-                    console.log(`\tUploading resource: .${ resource.replace(baseDir, "") }`)
-                    const resourceData = await readFile(resource)
-                    const { error: lessonResourcesError } = await supabase
-                        .storage
-                        .from("course-content")
-                        .upload(resource.replace(baseDir, ""), resourceData, {
-                            upsert: true,
-                            contentType: lookup(resource.split('.').pop()),
-                        })
-                    if (lessonResourcesError) {
-                        console.log("\t\tFailed to upload resource: " + resource.replace(baseDir, ""))
-                        console.log(lessonResourcesError)
-                    } else {
-                        console.log("\t\tSuccessfully uploaded resource: " + resource.replace(baseDir, ""))
-                    }
-                }
-                console.log(`\tFinished uploading ${ 1 + files.length + 1 + resources.length } files for course: .${ course.replace(baseDir, "") }`)
+                console.log(`\tFinished uploading ${ 1 + files.length } files for course: .${ course.replace(baseDir, "") }`)
             }
         }
     }
