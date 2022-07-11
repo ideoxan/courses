@@ -99,7 +99,7 @@ export default async function main() {
                 })
                 // Now we want to iterate over each file and upload the files to the database.
                 // We also want to collect the files in an array so we can upload the "map"
-                const workspaceMap = []
+                const workspaceMap = {}
                 for (const file of files) {
                     if ((await stat(file)).isDirectory()) {
                         // This is a directory, so we can skip it.
@@ -108,20 +108,8 @@ export default async function main() {
                     // Lets upload the file to the database.
                     console.log(`\tUploading file: .${ file.replace(baseDir, "") }`)
                     const fileData = await readFile(file)
-                    const { error: lessonWorkspaceError } = await supabase
-                        .storage
-                        .from("course-content")
-                        .upload(file.replace(baseDir, ""), fileData, {
-                            upsert: true,
-                            contentType: lookup(file.split('.').pop()),
-                        })
-                    if (lessonWorkspaceError) {
-                        console.log("\t\tFailed to upload file: " + file.replace(baseDir, ""))
-                        console.log(lessonWorkspaceError)
-                    } else {
-                        console.log("\t\tSuccessfully uploaded file: " + file.replace(baseDir, ""))
-                        workspaceMap.push(file.replace(baseDir, ""))
-                    }
+                    workspaceMap[file.replace(baseDir, "")] = fileData
+                    console.log("\t\tSuccessfully uploaded file: " + file.replace(baseDir, ""))
                 }
                 // Now we want to upload the workspace map to the database.
                 console.log(`\tUploading workspace map: .${ lesson.replace(baseDir, "") }`)
