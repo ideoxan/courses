@@ -87,7 +87,7 @@ export default async function main() {
                 // Now we want to iterate over each file and upload the files to the database.
                 // We also want to collect the files in an array so we can upload the "map"
                 const workspaceMap = {}
-                const workspacePath = `${ lesson }/workspace/`
+                const workspacePath = `${ baseDir }${ lesson }/workspace/`
                 for (const file of files) {
                     if ((await stat(file)).isDirectory()) {
                         // This is a directory, so we can skip it.
