@@ -89,7 +89,6 @@ export default async function main() {
                 console.log(`\t\tPacking files: .${ lesson.replace(baseDir, "") }`)
                 const workspaceMap = {}
                 const workspacePath = `${ lesson }workspace/`
-                console.log(baseDir, lesson, workspacePath)
                 for (const file of files) {
                     if ((await stat(file)).isDirectory()) {
                         // This is a directory, so we can skip it.
