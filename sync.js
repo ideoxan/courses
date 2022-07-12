@@ -88,7 +88,8 @@ export default async function main() {
                 // We also want to collect the files in an array so we can upload the "map"
                 console.log(`\t\tPacking files: .${ lesson.replace(baseDir, "") }`)
                 const workspaceMap = {}
-                const workspacePath = `${ lesson }/workspace/`
+                const workspacePath = `${ lesson }workspace/`
+                console.log(baseDir, lesson, workspacePath)
                 for (const file of files) {
                     if ((await stat(file)).isDirectory()) {
                         // This is a directory, so we can skip it.
