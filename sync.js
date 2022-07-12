@@ -86,6 +86,7 @@ export default async function main() {
                 })
                 // Now we want to iterate over each file and upload the files to the database.
                 // We also want to collect the files in an array so we can upload the "map"
+                console.log(`\t\tPacking files: .${ lesson.replace(baseDir, "") }`)
                 const workspaceMap = {}
                 const workspacePath = `${ lesson }/workspace/`
                 for (const file of files) {
@@ -94,12 +95,12 @@ export default async function main() {
                         continue
                     }
                     // Lets upload the file to the database.
-                    console.log(`\tUploading file: .${ file.replace(workspacePath, "") }`)
+                    console.log(`\t\t\tPacking file: .${ file.replace(workspacePath, "") }`)
                     const fileData = await readFile(file, {
                         encoding: "utf-8",
                     })
                     workspaceMap[file.replace(workspacePath, "")] = fileData
-                    console.log("\t\tSuccessfully uploaded file: " + file.replace(baseDir, ""))
+                    console.log("\t\t\tSuccessfully packed file: " + file.replace(baseDir, ""))
                 }
 
                 // Lets get the lesson guide file.
