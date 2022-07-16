@@ -99,7 +99,7 @@ export default async function main() {
                     const fileData = await readFile(file, {
                         encoding: "utf-8",
                     })
-                    workspaceMap[file.replace(workspacePath, "")] = fileData
+                    workspaceMap[file.replace(workspacePath, "/")] = fileData
                     console.log("\t\t\tSuccessfully packed file: " + file.replace(baseDir, ""))
                 }
 
