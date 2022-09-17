@@ -18,8 +18,8 @@
   },
   "homepage": "https://github.com/ideoxan/courses#readme",
   "dependencies": {
-    "@supabase/supabase-js": "^1.35.3",
-    "dotenv": "^16.0.1",
+    "@supabase/supabase-js": "^1.35.6",
+    "dotenv": "^16.0.2",
     "front-matter": "^4.0.2",
     "glob": "^8.0.3",
     "mime-types": "^2.1.35",
