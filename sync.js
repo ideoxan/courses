@@ -7,6 +7,7 @@ import YAML from "yaml"
 import path from "path"
 import fm from "front-matter"
 import tar from "tar"
+import { existsSync } from "fs"
 
 main()
 
@@ -18,21 +19,26 @@ export default async function main() {
     // tarballs and uploaded to the bucket.
 
     // We will follow these steps:
+    // 0. Delete all lesson-related entries in the database.
     // 1. Get the base directory of this project.
     // 2. Get a list of all courses in this directory.
-    // 3. Add the course to the database, keep track of the UUID, and iterate over each course:
-    //      3.1. Parse course metadata from the `courses.yaml` file.
-    //      3.2. Get a list of all chapters in this course.
-    //      3.3. Add the chapter to the database, keep track of the UUID, and iterate over each
-    //           chapter:
-    //         3.3.1. Get a list of all lessons in this chapter.
-    //         3.3.2. Iterate over each lesson:
-    //         3.3.3. Parse the guide.md file (WE ARE NOT GOING TO READ THE MARKDOWN ITSELF, JUST
-    //                THE FRONT MATTER YAML).
-    //         3.3.4. Tarball the workspace directory.
-    //         3.3.5. Upload the tarball to the bucket, inserting the object_id.
-    //         3.3.6. Upload specific referenced files to the bucket, inserting the object_id.
-    //         3.3.7. Add the lesson data to the database
+    // 3. For each course:
+    //      3.1 Parse course metadata from the `courses.yaml` file.
+    //      3.2 Add the course to the database, keep track of the UUID
+    //      3.3 Get a list of all chapters in this course.
+    //      3.4 For each chapter:
+    //          3.4.1 Get a list of all lessons in this chapter
+    //          3.4.2 Add the chapter to the database, keep track of the UUID
+    //          3.4.3 For each lesson:
+    //              3.4.3.1 Parse the guide.md file (WE ARE NOT GOING TO READ THE MARKDOWN ITSELF,
+    //                      JUST THE FRONT MATTER YAML).
+    //              3.4.3.2 Tarball the workspace directory.
+    //              3.4.3.3 Upload the tarball to the bucket, inserting the object_id.
+    //              3.4.3.4 Upload specific referenced files to the bucket, inserting the
+    //                      object_id.
+    //              3.4.3.5 Upload tasks and task conditions
+    //              3.4.3.6 Add the lesson data to the database
+    //      3.5 Loop through all lessons and chapters within the course, adding nav data
 
     // All entries (NOT TABLES FFS) should be deleted before we start...
     const badUUID = "123e4567-e89b-12d3-a456-426614174000"
@@ -73,7 +79,7 @@ export default async function main() {
                 pathSafe: chapter.replace(/[^a-z0-9]/gi, "-").toLowerCase(),
                 index: i
             }
-        })
+        }).sort((a, b) => a.index - b.index)
         console.log(`\tFound ${ chapters.length } chapters.`)
         for (const chapter of chapters) {
             // Upload the chapter to the database.
@@ -127,32 +133,44 @@ export default async function main() {
                 console.log(`\t\t\t\tUploaded guide ${ `${ lesson }`.replace(baseDir, "") }`)
 
                 // Tarball the workspace directory
-                console.log(path.join(lesson, "/workspace/"))
-                const workspaceTarball = await promisifyStream(tar.create({
-                    gzip: false,
-                    portable: true,
-                    preservePaths: false,
-                    cwd: path.join(lesson, "/workspace/"),
-                }, await readdir(path.join(lesson, "/workspace/"))))
+                if (existsSync(path.join(lesson, "/workspace/"))) {
+                    console.log(path.join(lesson, "/workspace/"))
+                    const workspaceTarball = await promisifyStream(tar.create({
+                        gzip: false,
+                        portable: true,
+                        preservePaths: false,
+                        cwd: path.join(lesson, "/workspace/"),
+                    }, await readdir(path.join(lesson, "/workspace/"))))
 
-                // Upload the tarball to the bucket
-                const { data: workspaceUploadData, error: workspaceUploadError } = await supabase
-                    .storage
-                    .from("starter-workspaces")
-                    .upload(`workspace-${ lessonMetadataData[0].id }.tar`, workspaceTarball, {
-                        upsert: true,
-                        contentType: "application/x-tar",
-                    })
-                if (workspaceUploadError) {
-                    console.error(`${ lesson }`.replace(baseDir, ""))
-                    console.error(workspaceUploadError)
-                    return
+                    // Upload the tarball to the bucket
+                    const { data: workspaceUploadData, error: workspaceUploadError } = await supabase
+                        .storage
+                        .from("starter-workspaces")
+                        .upload(`workspace-${ lessonMetadataData[0].id }.tar`, workspaceTarball, {
+                            upsert: true,
+                            contentType: "application/x-tar",
+                        })
+                    if (workspaceUploadError) {
+                        console.error(`${ lesson }`.replace(baseDir, ""))
+                        console.error(workspaceUploadError)
+                        return
+                    }
+                    console.log(`\t\t\t\tUploaded workspace ${ `${ lesson }`.replace(baseDir, "") }`)
+
+                    // Insert the keys of the uploaded files into the lesson entry in the database
+                    const { data: lessonUpdateData, error: lessonUpdateError } = await supabase.from("lessons").update({
+                        workspace: workspaceUploadData?.Key,
+                    }).eq("id", lessonMetadataData[0].id)
+                    if (lessonUpdateError) {
+                        console.error(`${ lesson }`.replace(baseDir, ""))
+                        console.error(lessonUpdateError)
+                        return
+                    }
                 }
-                console.log(`\t\t\t\tUploaded workspace ${ `${ lesson }`.replace(baseDir, "") }`)
+
 
                 // Insert the keys of the uploaded files into the lesson entry in the database
                 const { data: lessonUpdateData, error: lessonUpdateError } = await supabase.from("lessons").update({
-                    workspace: workspaceUploadData.Key,
                     guide: guideUploadData.Key,
                 }).eq("id", lessonMetadataData[0].id)
                 if (lessonUpdateError) {
@@ -163,7 +181,7 @@ export default async function main() {
 
 
                 // Upload each task
-                for (let j = 0; j < lessonMetadata.tasks.length; j++) {
+                for (let j = 0; j < lessonMetadata?.tasks?.length || 0; j++) {
                     // Insert task to the database
                     const { data: taskMetadataData, error: taskMetadataError } = await supabase.from("tasks").upsert([{
                         instructions: lessonMetadata.tasks[j].instructions,
@@ -212,6 +230,74 @@ export default async function main() {
                         }
                         console.log(`\t\t\t\tAdded condition ${ `${ lesson }`.replace(baseDir, "") }`)
                     }
+                }
+            }
+        }
+
+        // Loop through entire course and add navigation data (previous, next) to each lesson
+        // if applicable
+        console.log("\tAdding navigation data to lessons...")
+        for (let i = 0; i < chapters.length; i++) {
+            let { data: chapters, error: chaptersError } = await supabase
+                .from("chapters")
+                .select()
+                .eq("course", courseMetadata.uuid)
+                .order("index", { ascending: true })
+            if (chaptersError) {
+                console.error(chaptersError)
+                return
+            }
+            let { data: lessons, error: lessonsError } = await supabase
+                .from("lessons")
+                .select()
+                .eq("chapter", chapters[i].id)
+                .order("index", { ascending: true })
+            if (lessonsError) {
+                console.error(lessonsError)
+                return
+            }
+            console.log(`\t\tAdding navigation data to chapter ${ i }...`)
+            for (let j = 0; j < lessons.length; j++) {
+                console.log(`\t\t\tAdding navigation data to lesson ${ j }...`)
+                // Add previous lesson. If there is a lesson before, add it. If there is no lesson
+                // before in the chapter, check the previous chapter. If there is a previous
+                // chapter, add the last lesson in that chapter. If there is no previous chapter,
+                // add null.
+                let previous = null
+                if (j > 0) {
+                    previous = `${ courseMetadata.uuid }/${ i }/${ j - 1 }`
+                } else if (i > 0) {
+                    let { data: previousChapterLessons, error: previousChapterLessonsError } = await supabase
+                        .from("lessons")
+                        .select()
+                        .eq("chapter", chapters[i - 1].id)
+                        .order("index", { ascending: true })
+                    if (previousChapterLessonsError) {
+                        console.error(previousChapterLessonsError)
+                        return
+                    }
+                    previous = `${ courseMetadata.uuid }/${ i - 1 }/${ previousChapterLessons.length - 1 }`
+                } else {
+                    previous = null
+                }
+                // Add next lesson. If there is a lesson after, add it. If there is no lesson after
+                // in the chapter, check the next chapter. If there is a next chapter, add the
+                // first lesson in that chapter. If there is no next chapter, add null.
+                let next = null
+                if (j < lessons.length - 1) {
+                    next = `${ courseMetadata.uuid }/${ i }/${ j + 1 }`
+                } else if (i < chapters.length - 1) {
+                    next = `${ courseMetadata.uuid }/${ i + 1 }/0`
+                } else {
+                    next = null
+                }
+                // Update the lesson with the previous and next lesson
+                const { error: lessonUpdateError } = await supabase.from("lessons").update({
+                    previous, next
+                }).eq("id", lessons[j].id)
+                if (lessonUpdateError) {
+                    console.error(lessonUpdateError)
+                    return
                 }
             }
         }
