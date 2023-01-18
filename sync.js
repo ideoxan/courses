@@ -107,6 +107,7 @@ export default async function main() {
                 const { data: lessonMetadataData, error: lessonMetadataError } = await supabase.from("lessons").upsert([{
                     chapter: chapterMetadataData[0].id,
                     name: lessonMetadata.name,
+                    description: lessonMetadata.description,
                     environment: lessonMetadata.environment,
                     index: i,
                 }])
